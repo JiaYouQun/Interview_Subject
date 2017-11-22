@@ -46,17 +46,17 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
 
 **七.如何实现系统自带的侧滑返回上一个页面的交互动画**
 
-**八.如何在子线程启动一个定时器并保持运行**　　
+**八.如何在子线程启动一个定时器并保持运行**　<br /> 　
 因为子线程的RunLoop默认是关闭的，所以要定时器在子线程中保持运行，只要创建一个RunLoop（[NSRunLoop currentRunLoop]这个类方法会返回一个创建好的RunLoop）并把timer加入这个RunLoop中并启动即可，代码如下:  
-    //创建一个子线程
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    NSTimer *timer2 = [NSTimer timerWithTimeInterval:2 target:self selector:@selector(run) userInfo:nil repeats:YES] ;
-    [[NSRunLoop currentRunLoop] addTimer:timer2 forMode:NSDefaultRunLoopMode];
-    //子线程中的NSRunLoop默认是不开启的，所以必须开启才能执行run的代码
-    [[NSRunLoop currentRunLoop] run];
-    //NSLog不会执行，除非run方法的代码执行完毕
-    NSLog(@"子线程中的currentRunLoop%@",[NSRunLoop currentRunLoop]);
-    });　　
+            //创建一个子线程
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSTimer *timer2 = [NSTimer timerWithTimeInterval:2 target:self selector:@selector(run) userInfo:nil repeats:YES] ;
+            [[NSRunLoop currentRunLoop] addTimer:timer2 forMode:NSDefaultRunLoopMode];
+            //子线程中的NSRunLoop默认是不开启的，所以必须开启才能执行run的代码
+            [[NSRunLoop currentRunLoop] run];
+            //NSLog不会执行，除非run方法的代码执行完毕
+            NSLog(@"子线程中的currentRunLoop%@",[NSRunLoop currentRunLoop]);
+            });　　
 
 **九.@synchronize（anyobject）{}作用是什么？其中参数anyobject的作用是什么**
 
@@ -69,21 +69,21 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
 **十三.AutoLayout和AutoresizingMask的不同，前者相比后者优越性体现在哪些地方**
 
 **十四.以下代码有什么问题？**  
-    -(void)viewDidLoad{  
-        [super viewDidLoad];  
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotification:) name:@“notify_test” object:nil];
-    }
+            -(void)viewDidLoad{  
+                [super viewDidLoad];  
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotification:) name:@“notify_test” object:nil];
+            }
 
 
-    -(void)handleNotification:(NSNotification *)notification{  
-        [super handleNotification:notification];  
-        NSString *name =  [notification.userInfo objectForKey:@“name”];  
-        NSInterger *type = [notification.userInfo objectForKey:@“type”];  
-       if(type == 1){  
-         [self.goodsName addObject:name];  
-         [self.collectionView reloadData];  
-       }
-    }
+        -(void)handleNotification:(NSNotification *)notification{  
+            [super handleNotification:notification];  
+            NSString *name =  [notification.userInfo objectForKey:@“name”];  
+            NSInterger *type = [notification.userInfo objectForKey:@“type”];  
+           if(type == 1){  
+             [self.goodsName addObject:name];  
+             [self.collectionView reloadData];  
+           }
+        }
 **十五.EXC_BAD_ACCESS在什么情况下出现，如何捕捉异常？**
 
 **十六.如何监听一个对象中某个属性的变化，至少写出两种方式，并比较优劣**
