@@ -41,39 +41,22 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
 4. runtime
 
 **六.如何捕获UIWebview中的HTTP请求**　　
-1.shouldStartLoadWithRequest能够捕获http请求，但是像css，ajax请求都不会走这个代理。
+1.shouldStartLoadWithRequest能够捕获http请求，但是像css，ajax请求都不会走这个代理。　　
 2.NSURLProtocol子类的 canonicalRequestForRequest方法可以捕获http请求　　
 
 **七.如何实现系统自带的侧滑返回上一个页面的交互动画**
 
 **八.如何在子线程启动一个定时器并保持运行**　　
-- dispatch_queue_t queue = dispatch_queue_create("kk", DISPATCH_QUEUE_SERIAL);
--     // 串行队列中执行异步任务
--     dispatch_async(queue, ^{
--         // 在子线程中使用定时器
--         /*************************************************************/
--         // 第一种方式
-　　       // 此种方式创建的timer已经添加至runloop中
--         [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(doSomething) userInfo:nil repeats:NO];
-
--         // 在线程中使用定时器，如果不启动run loop，timer的事件是不会响应的，而子线程中runloop默认没有启动
--         // 让线程执行一个周期性的任务，如果不启动run loop， 线程跑完就可能被系统释放了
--         [[NSRunLoop currentRunLoop] run];// 如果没有这句，doSomething将不会执行！！！
--         // 第二种方式
--         NSTimer *timer = [NSTimer timerWithTimeInterval:2.0 target:self selector:@selector(doAnything) userInfo:nil repeats:NO];
--
--         // 将定时器添加到runloop中
--         [[NSRunLoop currentRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
--
--         // 在线程中使用定时器，如果不启动run loop，timer的事件是不会响应的，而子线程中runloop默认没有启动
--         // 让线程执行一个周期性的任务，如果不启动run loop， 线程跑完就可能被系统释放了
--         [[NSRunLoop currentRunLoop] run];// 如果没有这句，doAnything将不会执行！！！
--
--         /*************************************************************/
--
--         NSLog(@"子线程结束");
--
--     });
+因为子线程的RunLoop默认是关闭的，所以要定时器在子线程中保持运行，只要创建一个RunLoop（[NSRunLoop currentRunLoop]这个类方法会返回一个创建好的RunLoop）并把timer加入这个RunLoop中并启动即可，代码如下:  
+    //创建一个子线程
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSTimer *timer2 = [NSTimer timerWithTimeInterval:2 target:self selector:@selector(run) userInfo:nil repeats:YES] ;
+    [[NSRunLoop currentRunLoop] addTimer:timer2 forMode:NSDefaultRunLoopMode];
+    //子线程中的NSRunLoop默认是不开启的，所以必须开启才能执行run的代码
+    [[NSRunLoop currentRunLoop] run];
+    //NSLog不会执行，除非run方法的代码执行完毕
+    NSLog(@"子线程中的currentRunLoop%@",[NSRunLoop currentRunLoop]);
+    });　　
 
 **九.@synchronize（anyobject）{}作用是什么？其中参数anyobject的作用是什么**
 
