@@ -59,7 +59,7 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
             });　　
 
 **九.@synchronize（anyobject）{}作用是什么？其中参数anyobject的作用是什么**
-
+@synchronized()是线程锁，作用跟NSLock类似，保证在{}里面执行的操作是安全的，anyobject是需要在安全线程里面执行的参数。
 **十.NSObject的performSelect.withObject，可以执行某个对象的方法，当参数多于两个时，怎么解决**
 
 **十一.UITableView的delegate属性是strong，weak还是assign？为什么要这样设计**
@@ -85,7 +85,7 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
            }
         }
 **十五.EXC_BAD_ACCESS在什么情况下出现，如何捕捉异常？**
-
+EXC_BAD_ACCESS出现一般是因为代码中调用了已经被销毁的对象。这种异常只要在xcode中开启僵尸模式，就可以定位到具体的代码。
 **十六.如何监听一个对象中某个属性的变化，至少写出两种方式，并比较优劣**
 
 **十七.写一段代码，在不使用NSJSONSerilation和其他第三方库的情况下解析JSON数据**
