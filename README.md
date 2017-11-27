@@ -16,7 +16,14 @@ iOS的内存管理是使用引用计数技术，产生一个对象时引用计�
 **二.xcode的clang扫描（静态分析）都可以检查出所有的内存泄漏吗？如果不能，那些情况无法检查出来？**　　
 循环引用，运行时的内存泄漏　　
 
-**三.如何为一个类添加私有方法和属性？**
+**三.如何为一个类添加私有方法和属性？**  
+如果是系统类，可以使用runtime添加私用方法：OBJC_EXPORT BOOL class_addMethod(Class cls, SEL name, IMP imp, 
+const char *types) 返回是否添加成功。cls表示需要添加新方法的类，name表示selector的方法名称，imp是编译器生成的，指向实现方法的指针，也就是说，这个指针指向的方法就是我们要添加方法。  
+属性： objc_setAssociatedObject(id object, const void *key, id value, OBJC_ASSOCIATION_RETAIN_NONATOMIC);   
+说明：1.object表示给那个对象添加关联，   
+     2.const void *key 表示id类型的key值（后续将用这个来取值）属性名，   
+     3.id value属性值  
+     4.策略，是一个枚举值。  
 
 **四.本地通知和APNS的区别？**  
 本地通知是有本地应用触发的，是基于时间的一种通知形式，比如闹钟，待办事项等。  
