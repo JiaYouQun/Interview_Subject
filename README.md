@@ -13,7 +13,8 @@ iOS的内存管理，即内存引用计数管理。原理就是，一块内存�
 
 iOS的内存管理是使用引用计数技术，产生一个对象时引用计数加一，这个对象被其他对象引用时，自身的计数也会加一，每当其他的对象释放这个对象时，这个对象的引用计数会减一，直到这个对象的引用计数为0时，这个对象就会被释放.<br /> 　
 
-**二.xcode的clang扫描（静态分析）都可以检查出所有的内存泄漏吗？如果不能，那些情况无法检查出来？**　　
+**二.xcode的clang扫描（静态分析）都可以检查出所有的内存泄漏吗？如果不能，那些情况无法检查出来？**　　  
+
 循环引用，运行时的内存泄漏　　
 
 **三.如何为一个类添加私有方法和属性？**  
@@ -153,6 +154,90 @@ EXC_BAD_ACCESS出现一般是因为代码中调用了已经被销毁的对象。
 **二十二.是否可以把比较耗时的操作放在NSNotificationCenter中**  
 如果在异步线程中发的通知，那么可以执行比较耗时的操作。
 如果是在主线程发的通知，那么就不可以执行比较耗时的操作。
+
+**二十三.NStimer准吗？谈谈你的看法？如果不准该怎样实现一个精确的NSTimer?（来自cocoa社区的题目和答案）**  
+1.不准
+2.不准的原因如下：
+1、NSTimer加在main runloop中，模式是NSDefaultRunLoopMode，main负责所有主线程事件，例如UI界面的操作，复杂的运算，这样在同一个runloop中timer就会产生阻塞。
+2、模式的改变。主线程的 RunLoop 里有两个预置的 Mode：kCFRunLoopDefaultMode 和 UITrackingRunLoopMode。
+当你创建一个 Timer 并加到 DefaultMode 时，Timer 会得到重复回调，但此时滑动一个ScrollView时，RunLoop 会将 mode 切换为 TrackingRunLoopMode，这时 Timer 就不会被回调，并且也不会影响到滑动操作。所以就会影响到NSTimer不准的情况。
+PS:DefaultMode 是 App 平时所处的状态，rackingRunLoopMode 是追踪 ScrollView 滑动时的状态。
+方法一：
+1、在主线程中进行NSTimer操作，但是将NSTimer实例加到main runloop的特定mode（模式）中。避免被复杂运算操作或者UI界面刷新所干扰。
+self.timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(showTime) userInfo:nil repeats:YES];
+[[NSRunLoop currentRunLoop] addTimer:self.timer forMode:NSRunLoopCommonModes];
+2、在子线程中进行NSTimer的操作，再在主线程中修改UI界面显示操作结果；
+- (void)timerMethod2 {
+NSThread *thread = [[NSThread alloc] initWithTarget:self selector:@selector(newThread) object:nil];
+[thread start];
+}
+
+- (void)newThread
+{
+@autoreleasepool
+{
+[NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(showTime) userInfo:nil repeats:YES];
+[[NSRunLoop currentRunLoop] run];
+}
+}
+
+总结：
+一开始的时候系统就为我们将主线程的main runloop隐式的启动了。
+在创建线程的时候，可以主动获取当前线程的runloop。每个子线程对应一个runloop
+方法二：
+使用示例
+使用mach内核级的函数可以使用mach_absolute_time()获取到CPU的tickcount的计数值，可以通过”mach_timebase_info”函数获取到纳秒级的精确度 。然后使用mach_wait_until(uint64_t deadline)函数，直到指定的时间之后，就可以执行指定任务了。
+关于数据结构mach_timebase_info的定义如下：
+struct mach_timebase_info {uint32_t numer;uint32_t denom;};
+#include
+#include
+static const uint64_t NANOS_PER_USEC = 1000ULL;
+static const uint64_t NANOS_PER_MILLISEC = 1000ULL * NANOS_PER_USEC;
+static const uint64_t NANOS_PER_SEC = 1000ULL * NANOS_PER_MILLISEC;
+static mach_timebase_info_data_t timebase_info;
+static uint64_t nanos_to_abs(uint64_t nanos) {
+    return nanos * timebase_info.denom / timebase_info.numer;
+}
+void example_mach_wait_until(int seconds)
+{
+    mach_timebase_info(&timebase_info);
+    uint64_t time_to_wait = nanos_to_abs(seconds * NANOS_PER_SEC);
+    uint64_t now = mach_absolute_time();
+    mach_wait_until(now + time_to_wait);
+}
+方法三：直接使用GCD替代！
+// 获得队列
+// dispatch_queue_t queue = dispatch_get_global_queue(0, 0);
+dispatch_queue_t queue =dispatch_get_main_queue();
+
+// 创建一个定时器(dispatch_source_t本质还是个OC对象) dispatch_source_t类型
+self.timer =dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0, 0, queue);
+
+//设置定时器的各种属性（几时开始任务，每隔多长时间执行一次）
+// GCD的时间参数，一般是纳秒（1秒 == 10的9次方纳秒）
+//何时开始执行第一个任务
+// dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC)比当前时间晚3秒
+dispatch_time_t start =dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC));
+uint64_t interval = (uint64_t)(1.0 *NSEC_PER_SEC);
+dispatch_source_set_timer(self.timer, start, interval,0);
+
+// 设置回调
+dispatch_source_set_event_handler(self.timer, ^{
+NSLog(@"------------%@", [NSThread currentThread]);
+//(你想要处理业务,block方式)
+count++;
+if (count == 4) {
+// 取消定时器
+dispatch_cancel(self.timer);
+self.timer = nil;
+}
+});
+
+//dispatch_source_set_event_handler_f(self.timer, dispatch_function_t handler)(函数调用方式);
+// 启动定时器
+dispatch_resume(self.timer);
+
+
 
 
 
