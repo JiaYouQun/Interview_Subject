@@ -71,7 +71,51 @@ APNS 是远程推送通知由应用服务提供商发起，步骤：
 
 **十一.UITableView的delegate属性是strong，weak还是assign？为什么要这样设计**
 
-**十二.OC与js交互有哪些方式？**
+**十二.OC与js交互有哪些方式？**  
+js调用OC  
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType  
+截取到加载的webview的数据，主要是request.url。  
+
+OC调用js  
+[web stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"contxt_1('%@')",commonString]];  
+其中contxt_1这个是js里面定义的函数，commonString是函数的参数。
+
+通过JavaScriptCore调用
+js调用OC代码  
+
+//获取js的运行环境
+_jsContext=[webView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
+//当前控制器self执行代理方法
+_jsContext[@"native"] = self;
+JSExportAs
+(calculateForJS  /** handleFactorialCalculateWithNumber 作为js方法的别名 */,
+- (void)handleFactorialCalculateWithNumber:(NSNumber *)number
+);
+在.m中实现handleFactorialCalculateWithNumber即可。
+
+//block的方式
+//html调用无参数OC,不管是否有参数都可以写^(){}这样的block，后续通过[JSContext currentArguments]就能获取到传过来的参数。或者直接写 ^(NSArray *myArray){}那么传过来的参数就是myArray.
+//在js中定义的方法test1
+_jsContext[@"test1"] = ^(NSArray *myArray){
+        NSArray * args = [JSContext currentArguments];//传过来的参数
+        for (id  obj in args) {
+        NSLog(@"html传过来的参数%@",obj);
+    }
+};
+
+OC调用js
+/**
+* 获取js里面的方法,这时候返回值是一个方法名
+*/
+JSValue *picCallback = _jsContext[@"picCallp"];
+/**
+*  改变P标签，其中的@“Call P”是OC的字符串作为参数
+*/
+JSValue *newValue = [picCallback callWithArguments:@[@"P标签的内容改变了"]];
+
+NSLog(@"%@",[newValue toNumber]);
+
+
 
 **十三.AutoLayout和AutoresizingMask的不同，前者相比后者优越性体现在哪些地方**
 
@@ -102,3 +146,13 @@ EXC_BAD_ACCESS出现一般是因为代码中调用了已经被销毁的对象。
 **十九.网络请求当中加密的手段有哪些？如何防止被人篡改和高频率的重复请求？**
 
 **二十.app的登录密码应该如何保存才能做到安全？**
+
+**二十一.有些图片加载比较慢，你是怎么优化性能的**  
+利用多线程断点下载，比如图片有5M,在请求头中写请求信息比如1-3M，另一个请求头中写请求信息线程下载3-5M. 两个线程的数据都下载完毕了就合起来。
+
+**二十二.是否可以把比较耗时的操作放在NSNotificationCenter中**  
+如果在异步线程中发的通知，那么可以执行比较耗时的操作。
+如果是在主线程发的通知，那么就不可以执行比较耗时的操作。
+
+
+
